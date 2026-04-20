@@ -1,7 +1,9 @@
 ﻿using ApiUsuariosCurso.Data;
+using ApiUsuariosCurso.DTO.Login;
 using ApiUsuariosCurso.DTO.Usuario;
 using ApiUsuariosCurso.Models;
 using ApiUsuariosCurso.Services.Senha;
+using Microsoft.EntityFrameworkCore;
 
 namespace ApiUsuariosCurso.Services.Usuario
 {
@@ -15,6 +17,151 @@ namespace ApiUsuariosCurso.Services.Usuario
             _senhaInterface = senhaInterface;
         }
 
+        public async Task<ResponseModel<UsuarioModel>> EditarUsuario(UsuarioEdicaoDTO usuarioEdicaoDTO)
+        {
+           ResponseModel<UsuarioModel> response = new ResponseModel<UsuarioModel>();
+            try
+            {
+                var usuario = await _context.Usuarios.FindAsync(usuarioEdicaoDTO.ID);
+                if (usuario != null)
+                {
+                    usuario.Usuario = usuarioEdicaoDTO.Usuario;
+                    usuario.Nome = usuarioEdicaoDTO.Nome;
+                    usuario.Sobrenome = usuarioEdicaoDTO.Sobrenome;
+                    usuario.Email = usuarioEdicaoDTO.Email;
+                    usuario.DataAlteracao = DateTime.Now;
+                    _context.Usuarios.Update(usuario);
+                    await _context.SaveChangesAsync();
+                    response.Dados = usuario;
+                    response.Mensagem = "Usuário editado com sucesso.";
+                }
+                else
+                {
+                    response.Mensagem = "Usuário não encontrado.";
+                    response.Status = false;
+                }
+                return response;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+                return response;
+            }
+        }
+
+        public async Task<ResponseModel<UsuarioModel>> ExcluirUsuario(int id)
+        {
+            ResponseModel<UsuarioModel> response = new ResponseModel<UsuarioModel>();
+            try
+            {
+                var usuario = await _context.Usuarios.FindAsync(id);
+                if (usuario != null)
+                {
+                    _context.Usuarios.Remove(usuario);
+                    await _context.SaveChangesAsync();
+                    response.Dados = usuario;
+                    response.Mensagem = "Usuário excluído com sucesso.";
+                }
+                else
+                {
+                    response.Mensagem = "Usuário não encontrado.";
+                    response.Status = false;
+                }
+                return response;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+                return response;
+            }         
+        }
+
+        public async Task<ResponseModel<List<UsuarioModel>>> ListarUsuarios()
+        {
+            ResponseModel<List<UsuarioModel>> response = new ResponseModel<List<UsuarioModel>>();
+
+            try
+            {
+                var ususarios = await _context.Usuarios.ToListAsync();
+                response.Dados = ususarios;
+                response.Mensagem = "Lista de usuários obtida com sucesso.";                
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+                return response;
+            }
+        }
+
+        public async Task<ResponseModel<UsuarioModel>> LoginUsuario(UsuarioLoginDTO usuarioLoginDTO)
+        { 
+            ResponseModel<UsuarioModel> response = new ResponseModel<UsuarioModel>();
+            try
+            {
+                var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == usuarioLoginDTO.Email);
+                if (usuario == null)
+                {
+                    response.Mensagem = "Usuário não encontrado.";
+                    response.Status = false;
+                    return response;
+                }
+               
+                if (!_senhaInterface.VerificarSenhaHash(usuarioLoginDTO.Senha, usuario.SenhaHash, usuario.SenhaSalt))
+                {
+                    response.Mensagem = "Credenciais incorretas.";
+                    response.Status = false;
+                    return response;
+                }
+                               
+                usuario.Token = _senhaInterface.CriarToken(usuario);
+                _context.Usuarios.Update(usuario);
+                await _context.SaveChangesAsync();
+
+                response.Dados = usuario;
+                response.Mensagem = "Login realizado com sucesso.";
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+                return response;
+            }
+
+        }
+
+        public async Task<ResponseModel<UsuarioModel>> ObterUsuarioPorId(int id)
+        {
+            ResponseModel<UsuarioModel> response = new ResponseModel<UsuarioModel>();
+            try
+            {
+                var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == id);               
+                if (usuario != null)
+                {
+                    response.Dados = usuario;
+                    response.Mensagem = "Usuário encontrado.";
+                }
+                else
+                {
+                    response.Mensagem = "Usuário não encontrado.";
+                    response.Status = false;
+                }
+                return response;
+
+            }
+            catch (Exception ex)
+            {
+                response.Mensagem = ex.Message;
+                response.Status = false;
+                return response;
+            }
+        }
 
         public async Task<ResponseModel<UsuarioModel>> RegistrarUsuario(UsuarioCriacaoDTO usuarioCriacaoDTO)
         {

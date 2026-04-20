@@ -1,4 +1,5 @@
-﻿using ApiUsuariosCurso.DTO.Usuario;
+﻿using ApiUsuariosCurso.DTO.Login;
+using ApiUsuariosCurso.DTO.Usuario;
 using ApiUsuariosCurso.Services.Usuario;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -25,7 +26,11 @@ namespace ApiUsuariosCurso.Controllers
             return Ok(usuario);
         }
 
-
-
+        [HttpPost("login")]
+        public async Task<IActionResult> LoginUsuario(UsuarioLoginDTO usuarioLoginDTO)
+        {
+            var usuario = await _usuarioInterface.LoginUsuario(usuarioLoginDTO);
+            return Ok(usuario);
+        }
     }
 }
